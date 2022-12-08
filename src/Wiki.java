@@ -1,7 +1,7 @@
-import java.util.HashMap;
-import java.util.Map;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -20,8 +20,6 @@ public class Wiki {
     private String dominio;
     // endereço completo da API a ser utilizada
     private String endpoint;
-    // módulo (ação) a ser usada para consulta dos dados
-    private String moduloConsulta;
     // parâmetros padrões a serem utilizados em todas as consultas
     private Map<String, String> parametrosPadroes;
     // indica se está em modo de debug (nesse caso, são exibidas mensagens detalhadas do que é feito)
@@ -45,7 +43,6 @@ public class Wiki {
     public Wiki(String dominio) {
         this.dominio = dominio;
         endpoint = "https://" + dominio + "/w/api.php";
-        moduloConsulta = "action=query";
         debug = false;
 
         definirParametrosPadroes();
@@ -57,6 +54,9 @@ public class Wiki {
     private void definirParametrosPadroes() {
         parametrosPadroes = new HashMap<>();
         
+        // Usaremos o módulo de consulta
+        parametrosPadroes.put("action","query");
+
         // Aplica os redirecionamentos necessários até chegar na página correta
         parametrosPadroes.put("redirects","true");
         
@@ -124,24 +124,30 @@ public class Wiki {
         // Vamos buscar a página cujo título foi passado
         parametros.put("titles", titulo);
 
+        if (titulo.equals("São Paulo")) {
+            System.out.println("É igual");
+        }
+        else {
+            System.out.println("É diferente " + titulo + " x " + "São Paulo");
+        }
+
         return consultarWiki(parametros);
     }
 
     /*
-     * Monta uma string de parâmetros para ser usada na URL da API
+     * Junta dois MAPs em um novo MAP
      */
-    private String montaStringParametros(Map<String, String> parametros) throws UnsupportedEncodingException {
+    private <K,V> Map<K, V> concatenaParametros(Map<K, V> parametros1, Map<K, V> parametros2) {
         // Junta os parâmetros passados com os parâmetros padrões
-        Map<String, String> todosParametros = new HashMap<>(parametros);
-        todosParametros.putAll(parametrosPadroes);
-                
-        return URLUtils.montaStringParametros(todosParametros);
+        Map<K, V> parametros = new HashMap<>(parametros1);
+        parametros.putAll(parametros2);                
+        return parametros;
     }
 
     private PaginaWiki consultarWiki(Map<String, String> parametros) throws Exception {
         try {
             // Começa a montar a string de consulta            
-            String requisicao = endpoint + "?" + moduloConsulta + montaStringParametros(parametros);
+            String requisicao =  URLUtils.constroiURLRequisicao(endpoint, concatenaParametros(parametrosPadroes, parametros));
             if (debug) System.out.println("=> Wiki: URL da requisição: " + requisicao);
                
             // Faz a requisição na API

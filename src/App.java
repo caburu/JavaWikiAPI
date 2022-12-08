@@ -1,9 +1,10 @@
 import java.util.Scanner;
 
+import javax.swing.JOptionPane;
+
 public class App {
     public static void main(String[] args) throws Exception {
-        // Precisei passar o charSet por problemas no terminal do VS Code no Windows em reconhecer acentos
-        Scanner entrada = new Scanner(System.in, "utf-8");
+        Scanner entrada = new Scanner(System.in);
 
         // Cria objeto para consultar dados da Wikipedia
         Wiki wiki = new Wiki();
@@ -12,8 +13,13 @@ public class App {
 
         String titulo;
         do {
-            System.out.print("Digite o título da página a ser buscada (ENTER para sair): ");
-            titulo = entrada.nextLine();
+            //System.out.print("Digite o título da página a ser buscada (ENTER para sair): ");
+            //titulo = entrada.nextLine();
+            
+            // No terminal no Windows está dando problema com String acentuadas.
+            // Se uso a palavra "São Paulo" diretamente no código, URLEncoder transforma em "S%C3%A3o+Paulo" e funciona.
+            // Mas se o usuário digita isso no terminal, URLEncoder transforma em "S%EF%BF%BDo+Paulo" e dá errado.
+            titulo = JOptionPane.showInputDialog(null, "Digite o título da página a ser buscada (ENTER para sair): ");
                         
             if (titulo.length() > 0) {
 
@@ -57,6 +63,8 @@ public class App {
                 // }
             }
         } while (titulo.length() > 0);
+
+        wiki.terminar();
 
         entrada.close();
     }
