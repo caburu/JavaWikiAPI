@@ -13,13 +13,15 @@ public class App {
 
         String titulo;
         do {
-            //System.out.print("Digite o título da página a ser buscada (ENTER para sair): ");
-            //titulo = entrada.nextLine();
+            System.out.print("\nDigite o título da página a ser buscada.\n\t- ENTER para sair.\n\t- No Windows, escreva @ para palavras acentuadas\n> ");
+            titulo = entrada.nextLine();
             
-            // No terminal no Windows está dando problema com String acentuadas.
-            // Se uso a palavra "São Paulo" diretamente no código, URLEncoder transforma em "S%C3%A3o+Paulo" e funciona.
-            // Mas se o usuário digita isso no terminal, URLEncoder transforma em "S%EF%BF%BDo+Paulo" e dá errado.
-            titulo = JOptionPane.showInputDialog(null, "Digite o título da página a ser buscada (ENTER para sair): ");
+            if (titulo.equals("@")) {
+                System.out.println("Warning: No terminal no Windows está dando problema com String acentuadas.");
+                // Se uso a palavra "São Paulo" diretamente no código, URLEncoder transforma em "S%C3%A3o+Paulo" e funciona.
+                // Mas se o usuário digita isso no terminal, URLEncoder transforma em "S%EF%BF%BDo+Paulo" e dá errado.
+                titulo = JOptionPane.showInputDialog(null, "Digite o título da página a ser buscada (vazio para sair): ");
+            }
                         
             if (titulo.length() > 0) {
 
