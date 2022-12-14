@@ -1,3 +1,5 @@
+package br.ufla.gac106.JavaWikiAPI;
+
 /**
  * Classe que representa uma Página Wiki consultada
  */

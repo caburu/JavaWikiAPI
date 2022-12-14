@@ -1,3 +1,5 @@
+package br.ufla.gac106.JavaWikiAPI;
+
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;

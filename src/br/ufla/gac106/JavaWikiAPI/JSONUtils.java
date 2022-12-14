@@ -1,3 +1,5 @@
+package br.ufla.gac106.JavaWikiAPI;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;

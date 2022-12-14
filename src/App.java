@@ -2,6 +2,8 @@ import java.util.Scanner;
 
 import javax.swing.JOptionPane;
 
+import br.ufla.gac106.JavaWikiAPI.Wiki;
+
 public class App {
     public static void main(String[] args) throws Exception {
         Scanner entrada = new Scanner(System.in);
@@ -21,7 +23,7 @@ public class App {
             // Mas se o usuário digita isso no terminal, URLEncoder transforma em "S%EF%BF%BDo+Paulo" e dá errado.
             titulo = JOptionPane.showInputDialog(null, "Digite o título da página a ser buscada (ENTER para sair): ");
                         
-            if (titulo.length() > 0) {
+            if (titulo != null && titulo.length() > 0) {
 
                 System.out.println("\n=== Primeiro trecho da página: ===");
                 System.out.println(wiki.buscarResumoDePagina(titulo));
@@ -62,9 +64,9 @@ public class App {
                     
                 // }
             }
-        } while (titulo.length() > 0);
+        } while (titulo != null && titulo.length() > 0);
 
-        wiki.terminar();
+        wiki.close();
 
         entrada.close();
     }

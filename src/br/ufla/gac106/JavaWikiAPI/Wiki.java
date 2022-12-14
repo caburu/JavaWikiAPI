@@ -1,3 +1,6 @@
+package br.ufla.gac106.JavaWikiAPI;
+
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
@@ -15,7 +18,7 @@ import com.mashape.unirest.http.exceptions.UnirestException;
  * 
  * Pode ser a Wikipedia em qualquer idioma, ou qualquer outro site que utilize a plataforma Wiki
  */
-public class Wiki {
+public class Wiki implements Closeable {
     // domínio da Wiki a ser consultada
     private String dominio;
     // endereço completo da API a ser utilizada
@@ -86,15 +89,12 @@ public class Wiki {
     }
 
     /**
-     * Termina o uso das ferramentas internas (caso contrário o programa não é fechado)
+     * Termina o uso das ferramentas internas
      */
-    public void terminar() {        
-        try {
-            // É necessário terminar o loop do Unirest para conseguir fechar o programa
-            Unirest.shutdown();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    @Override
+    public void close() throws IOException {
+        // É necessário terminar o loop do Unirest para conseguir fechar o programa
+        Unirest.shutdown();
     }
 
     /*
