@@ -17,7 +17,7 @@ public class App {
     public static void main(String[] args) throws Exception {
         new App().executar();
     }
-    
+
     /*
      * Executa o programa
      */
@@ -26,7 +26,7 @@ public class App {
 
         // Cria objeto para consultar dados da Wikipedia
         wiki = new Wiki();
-        
+
         // Trata o loop do menu
         int opcao = 0;
         while (opcao != 5) {
@@ -46,18 +46,18 @@ public class App {
                     String termo = obterTermoDeBusca("o termo a ser pesquisado");
                     buscarTitulosDePaginas(termo);
                     break;
-                
+
                 case 3:
                     ligarDesligarModoDebug();
                     break;
-                    
+
                 case 4:
                     mudarWikiConsultada();
                     break;
-                    
+
                 case 5:
                     System.out.println("Obrigado por usar a Java Wiki API!");
-                    break;           
+                    break;
 
                 default:
                     System.out.println("=> Opção inválida!");
@@ -70,6 +70,7 @@ public class App {
         wiki.close();
         entrada.close();
     }
+
     /*
      * Exibe o menu e obtém a opção escolhida pelo usuário
      */
@@ -88,24 +89,26 @@ public class App {
 
     /**
      * Obtém uma String de busca do usuário
+     * 
      * @return A String digitada ou null (se não fornecida)
      */
     private String obterTermoDeBusca(String descricaoDoTermo) {
         System.out.print("\nDigite " + descricaoDoTermo + "\n\t- No Windows, escreva @ para palavras acentuadas\n> ");
         String termo = entrada.nextLine();
-    
+
         if (termo.equals("@")) {
             System.out.println("Warning: No terminal no Windows está dando problema com String acentuadas.");
-            // Se uso a palavra "São Paulo" diretamente no código, URLEncoder transforma em "S%C3%A3o+Paulo" e funciona.
-            // Mas se o usuário digita isso no terminal, URLEncoder transforma em "S%EF%BF%BDo+Paulo" e dá errado.
+            // Se uso a palavra "São Paulo" diretamente no código, URLEncoder transforma em
+            // "S%C3%A3o+Paulo" e funciona.
+            // Mas se o usuário digita isso no terminal, URLEncoder transforma em
+            // "S%EF%BF%BDo+Paulo" e dá errado.
             termo = JOptionPane.showInputDialog(null, "Digite " + descricaoDoTermo + ":");
         }
 
         if (termo == null || termo.length() == 0) {
             System.out.println("=> Nenhum termo digitado.");
             return null;
-        }
-        else {
+        } else {
             return termo;
         }
     }
@@ -114,18 +117,17 @@ public class App {
      * Consulta a página de título passado na API da Wiki
      */
     private void consultarPagina(String titulo) throws Exception {
-        if (titulo != null) {    
+        if (titulo != null) {
             System.out.println("Consultando " + wiki.getEndpoint() + " (aguarde)...");
             PaginaWiki pagina = wiki.buscarPagina(titulo);
 
             if (pagina == null) {
                 System.out.println("\nPágina " + titulo + " não encontrada!");
-            }
-            else {
+            } else {
                 System.out.println("\n" + pagina);
-                
+
                 exibirImagemDaPagina(pagina);
-            }            
+            }
         }
         aguardarEnter();
     }
@@ -141,8 +143,7 @@ public class App {
             janela.setAlwaysOnTop(true);
             janela.pack();
             janela.setVisible(true);
-        }
-        else {
+        } else {
             System.out.println("=> Página não tem imagem (thumbnail)!");
         }
     }
@@ -170,18 +171,17 @@ public class App {
      * Muda o domínio da Wiki utilizado
      */
     private void mudarWikiConsultada() {
-        System.out.print("Digite o endpoint da Wiki a ser consultada (exemplos: https://en.wikipedia.org/w/api.php ou https://awoiaf.westeros.org/api.php):\n> ");
+        System.out.print(
+                "Digite o endpoint da Wiki a ser consultada (exemplos: https://en.wikipedia.org/w/api.php ou https://awoiaf.westeros.org/api.php):\n> ");
         String dominio = entrada.nextLine();
-        if (dominio.length() == 0) { 
+        if (dominio.length() == 0) {
             System.out.println("Domínimo inválido!");
-        }
-        else {
+        } else {
             wiki.setEndpoint(dominio);
             System.out.print("> Domínio alterado para: " + dominio);
         }
         aguardarEnter();
     }
-
 
     /**
      * Liga/desliga o modo de debug do objeto que consulta a API da Wiki

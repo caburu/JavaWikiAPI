@@ -12,7 +12,8 @@ import java.util.Map;
  */
 public class URLUtils {
     /**
-     * Monta o trecho da URL com os parâmetros de uma requisição no formato "&param=valor" para cada par chave-valor passado.
+     * Monta o trecho da URL com os parâmetros de uma requisição no formato
+     * "&param=valor" para cada par chave-valor passado.
      * 
      * @param parametros Pares que representam cada parâmetro e seu valor
      * 
@@ -21,11 +22,13 @@ public class URLUtils {
      * @throws UnsupportedEncodingException
      * @throws MalformedURLException
      */
-    public static String constroiURLRequisicao(String endpoint, Map<String, String> parametros) throws URISyntaxException, UnsupportedEncodingException, MalformedURLException {
+    public static String constroiURLRequisicao(String endpoint, Map<String, String> parametros)
+            throws URISyntaxException, UnsupportedEncodingException, MalformedURLException {
         String stringParametros = endpoint + "?";
         for (String param : parametros.keySet()) {
-            stringParametros += "&" + String.format("%s=%s", param, URLEncoder.encode(parametros.get(param), StandardCharsets.UTF_8));
+            stringParametros += "&"
+                    + String.format("%s=%s", param, URLEncoder.encode(parametros.get(param), StandardCharsets.UTF_8));
         }
-        return stringParametros; 
+        return stringParametros;
     }
 }

@@ -15,7 +15,7 @@ public class AppMinimo {
         System.out.println(pagina.getResumo());
 
         // Demonstrando pesquisa por títulos de página por um termo de busca
-        
+
         System.out.println("\nFazendo uma busca por páginas que tenham o termo 'gato' no título");
         List<String> titulosDePagina = wiki.pesquisarTitulosDePaginas("gato");
 

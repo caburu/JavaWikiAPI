@@ -6,7 +6,7 @@ import java.awt.image.BufferedImage;
  * Classe que representa uma Página Wiki consultada
  */
 public class PaginaWiki {
-    
+
     // Título da Página
     private String titulo;
     // Identificador da página na Wiki
@@ -15,34 +15,43 @@ public class PaginaWiki {
     private String resumo;
     // Imagem (thumbnail) representativa da página
     private BufferedImage imagem;
-    
+
     /*
-     * Constrói um objeto de uma página Wiki a partir de seu título, identificador
+     * Constrói um objeto de uma página Wiki a partir de seu título e identificador
+     * na Wiki
      * 
      * @param titulo Título da página na Wiki
+     * 
      * @param id Identificador da página na Wiki
      */
     public PaginaWiki(String titulo, int id) {
         this(titulo, id, "");
     }
-    
+
     /*
-     * Constrói um objeto de uma página Wiki a partir de seu título, identificador e texto de resumo
+     * Constrói um objeto de uma página Wiki a partir de seu título, identificador e
+     * texto de resumo
      * 
      * @param titulo Título da página na Wiki
+     * 
      * @param id Identificador da página na Wiki
+     * 
      * @param resumo Texto de resumo da página na Wiki
      */
     public PaginaWiki(String titulo, int id, String resumo) {
         this(titulo, id, resumo, null);
     }
-    
+
     /*
-     * Constrói um objeto de uma página Wiki a partir de seu título, identificador, texto de resumo e imagem representativa
+     * Constrói um objeto de uma página Wiki a partir de seu título, identificador,
+     * texto de resumo e imagem representativa
      * 
      * @param titulo Título da página na Wiki
+     * 
      * @param id Identificador da página na Wiki
+     * 
      * @param resumo Texto de resumo da página na Wiki
+     * 
      * @param imagem Imagem (thumbnail) que representa a página na Wiki
      */
     public PaginaWiki(String titulo, int id, String resumo, BufferedImage imagem) {
@@ -52,9 +61,9 @@ public class PaginaWiki {
         this.imagem = imagem;
     }
 
-
     /**
      * Título da página na Wiki
+     * 
      * @return O título
      */
     public String getTitulo() {
@@ -63,6 +72,7 @@ public class PaginaWiki {
 
     /**
      * Identificador da página na Wiki
+     * 
      * @return O identificador
      */
     public int getId() {
@@ -71,6 +81,7 @@ public class PaginaWiki {
 
     /**
      * Resumo da página na Wiki
+     * 
      * @return O resumo
      */
     public String getResumo() {
@@ -79,6 +90,7 @@ public class PaginaWiki {
 
     /**
      * Imagem (thubmnail) representativa da página
+     * 
      * @return A imagem
      */
     public BufferedImage getImagem() {
