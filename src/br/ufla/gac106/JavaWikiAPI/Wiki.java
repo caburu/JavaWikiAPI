@@ -3,10 +3,15 @@ package br.ufla.gac106.JavaWikiAPI;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.imageio.ImageIO;
+
+import java.awt.image.BufferedImage;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -79,6 +84,15 @@ public class Wiki implements Closeable {
     }
 
     /**
+     * Retorna se está em modo de debug (nesse caso, são exibidas mensagens detalhadas do que é feito)
+     * 
+     * @return Indica se está em modo de debug
+     */
+    public Boolean getDebug() {
+        return debug;
+    }
+
+    /**
      * Permite ligar/desligar modo de debug
      * 
      * @param debug Estado do modo de debug
@@ -109,9 +123,12 @@ public class Wiki implements Closeable {
         if (debug) System.out.println("=> Wiki: Montando parâmetros da busca por uma página pelo título");
 
         Map<String, String> parametros = new HashMap<>();
+
+        // Vamos fazer uma consulta
+        parametros.put("action", "query");
         
-        // Parâmetro que indica a busca pelo resumo da página
-        parametros.put("prop", "extracts");
+        // Parâmetro que indica a busca pelo resumo da página e pela imagem (thumbnail) da página
+        parametros.put("prop", "extracts|pageimages");
         
         // Vamos buscar apenas o conteúdo antes da primeira seção
         parametros.put("exintro", "true");
@@ -122,8 +139,8 @@ public class Wiki implements Closeable {
         // Vamos buscar o texto sem nenhuma formatação
         parametros.put("exsectionformat", "plain");
 
-        // Vamos fazer uma consulta
-        parametros.put("action", "query");
+        // Largura máxima da imagem em pixels
+        parametros.put("pithumbsize", "300");
 
         // Vamos buscar a página cujo título foi passado
         parametros.put("titles", titulo);
@@ -207,9 +224,15 @@ public class Wiki implements Closeable {
                 if (debug) System.out.println("=> Wiki: página de título '" + pagina.get("title").getAsString() + "' não existe.");
             }
             else {
+                BufferedImage imagem = null;
+                if (pagina.get("thumbnail") != null) {
+                    String endereçoDaImagem = pagina.get("thumbnail").getAsJsonObject().get("source").getAsString();
+                    imagem = ImageIO.read(new URL(endereçoDaImagem));
+                }
                 return new PaginaWiki(pagina.get("title").getAsString(), 
                                       pagina.get("pageid").getAsInt(),
-                                      pagina.get("extract").getAsString());
+                                      pagina.get("extract").getAsString(),
+                                      imagem);
             }
             return null;
         }
