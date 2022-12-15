@@ -11,7 +11,7 @@ public class AppMinimo {
         // Demonstrando busca de uma página por título
 
         System.out.println("Exibindo descrição da página de título 'Lavras'");
-        PaginaWiki pagina = wiki.buscarPagina("Lavras");
+        PaginaWiki pagina = wiki.consultarPagina("Lavras");
         System.out.println(pagina.getResumo());
 
         // Demonstrando pesquisa por títulos de página por um termo de busca
@@ -26,7 +26,7 @@ public class AppMinimo {
 
         System.out.println("\nExibindo descrições das páginas encontradas:");
         for (String tituloDePagina : titulosDePagina) {
-            pagina = wiki.buscarPagina(tituloDePagina);
+            pagina = wiki.consultarPagina(tituloDePagina);
             System.out.println(tituloDePagina + "\n" + pagina.getResumo() + "\n");
         }
 

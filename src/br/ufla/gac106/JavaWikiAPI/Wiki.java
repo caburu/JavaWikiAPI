@@ -29,17 +29,19 @@ import com.mashape.unirest.http.exceptions.UnirestException;
  * plataforma Wiki
  */
 public class Wiki implements Closeable {
-    // endereço completo da API a ser utilizada
+    // Endereço completo da API a ser utilizada
     private String endpoint;
-    // parâmetros padrões a serem utilizados em todas as consultas
-    private Map<String, String> parametrosPadroes;
+    // Parâmetros padrões a serem utilizados em uma ação de consulta
+    private Map<String, String> parametrosConsulta;
+    // Parâmetros padrões a serem utilizados em uma ação de pesquisa
+    private Map<String, String> parametrosPesquisa;
     // indica se está em modo de debug (nesse caso, são exibidas mensagens
     // detalhadas do que é feito)
     private boolean debug;
 
     /**
-     * Constrói o objeto capaz de obter dados da Wikipedia em Português (domínio
-     * "pt.wikipedia.org").
+     * Constrói o objeto capaz de obter dados da Wikipedia em Português (endpoint
+     * "https://pt.wikipedia.org/w/api.php").
      * Lembre-se de usar o método terminar quando não for mais usar o objeto.
      * 
      * Para obter dados de outras Wikis, utilize outro construtor (ou o método
@@ -67,15 +69,24 @@ public class Wiki implements Closeable {
      * Define parâmetros padrões a serem utilizados em todas as consultas
      */
     private void definirParametrosPadroes() {
-        parametrosPadroes = new HashMap<>();
+        parametrosConsulta = Map.of(
+                "action", "query", // vamos fazer uma consulta
+                "prop", "extracts|pageimages", // buscando pelo resumo e pela imagem (thumbnail) da página
+                "exintro", "true", // queremos o resumo que vem antes da primeira seção
+                "explaintext", "true", // queremos o texto puro em vez de HTML limitado
+                "exsectionformat", "plain", // e com o texto sem nenhuma formatação
+                "pithumbsize", "300", // a imagem deve ter largura máxima da imagem em pixels
+                "redirects", "resolve", // os redirecionamentos de página devem ser tratados
+                "format", "json", // a resposta deve vir no formato JSON
+                "formatversion", "2" // na versão 2
+        );
 
-        // Aplica os redirecionamentos necessários até chegar na página correta
-        parametrosPadroes.put("redirects", "resolve");
-
-        // Vamos obter resultados no formato JSON v2 (sem isso é retornado resultado
-        // HTML)
-        parametrosPadroes.put("format", "json");
-        parametrosPadroes.put("formatversion", "2");
+        parametrosPesquisa = Map.of(
+                "action", "opensearch", // vamos fazer uma pesquisa
+                "redirects", "resolve", // os redirecionamentos de página devem ser tratados
+                "format", "json", // a resposta deve vir no formato JSON
+                "formatversion", "2" // na versão 2
+        );
     }
 
     /**
@@ -113,12 +124,11 @@ public class Wiki implements Closeable {
     public void setDebug(boolean debug) {
         this.debug = debug;
 
-        if (debug)
-            System.out.println("=> Wiki em modo de debug (endpoint: " + endpoint + ")");
+        if (debug) System.out.println("=> Wiki em modo de debug (endpoint: " + endpoint + ")");
     }
 
     /**
-     * Termina o uso das ferramentas internas
+     * Libera os recursos utilizados
      */
     @Override
     public void close() throws IOException {
@@ -138,35 +148,19 @@ public class Wiki implements Closeable {
      * 
      * @returns Objeto da página Wiki buscada (ou null se ela não for encontrada)
      */
-    public PaginaWiki buscarPagina(String titulo) throws Exception {
-        if (debug)
-            System.out.println("=> Wiki: Montando parâmetros da busca por uma página pelo título");
+    public PaginaWiki consultarPagina(String titulo) throws Exception {
+        if (debug) System.out.println("=> Wiki: Montando parâmetros da busca por uma página pelo título");
 
-        Map<String, String> parametros = new HashMap<>();
-
-        // Vamos fazer uma consulta
-        parametros.put("action", "query");
-
-        // Parâmetro que indica a busca pelo resumo da página e pela imagem (thumbnail)
-        // da página
-        parametros.put("prop", "extracts|pageimages");
-
-        // Vamos buscar apenas o conteúdo antes da primeira seção
-        parametros.put("exintro", "true");
-
-        // Vamos buscar como texto puro em vez de HTML limitado
-        parametros.put("explaintext", "true");
-
-        // Vamos buscar o texto sem nenhuma formatação
-        parametros.put("exsectionformat", "plain");
-
-        // Largura máxima da imagem em pixels
-        parametros.put("pithumbsize", "300");
+        Map<String, String> parametros = new HashMap<>(parametrosConsulta);
 
         // Vamos buscar a página cujo título foi passado
         parametros.put("titles", titulo);
 
-        return consultarWiki(parametros);
+        // Faz a requisição de consulta na API
+        JsonObject jsonResposta = fazerRequisicao(parametros).getAsJsonObject();
+
+        // Processa a resposta e retorna a página
+        return processarRespostaConsulta(jsonResposta);
     }
 
     /**
@@ -180,80 +174,62 @@ public class Wiki implements Closeable {
      * @return Uma lista de páginas retornada pela busca
      */
     public List<String> pesquisarTitulosDePaginas(String termoDeBusca) throws Exception {
-        if (debug)
-            System.out.println("=> Wiki: Montando parâmetros da pesquisa por títulos de páginas");
+        if (debug) System.out.println("=> Wiki: Montando parâmetros da pesquisa por títulos de páginas");
 
-        Map<String, String> parametros = new HashMap<>();
-
-        // Vamos fazer uma pesquisa
-        parametros.put("action", "opensearch");
+        Map<String, String> parametros = new HashMap<>(parametrosPesquisa);
 
         // Parâmetro para passar o termo de busca
         parametros.put("search", termoDeBusca);
 
-        return pesquisarNaWiki(parametros);
+        // Faz a requisição de pesquisa na API
+        JsonArray jsonResposta = fazerRequisicao(parametros).getAsJsonArray();
+
+        // Processa a resposta da pesquisa e retorna a lista de títulos de página
+        return processarRespostaPesquisa(jsonResposta);
     }
 
-    /*
-     * Junta dois MAPs em um novo MAP
+    /**
+     * Faz uma requisição na API da Wiki utilizando os parâmetros passados.
+     * 
+     * @param parametros Parâmetros da chamada da API
+     * @return Elemento JSON retornado como resposta
+     * @throws Exception
      */
-    private <K, V> Map<K, V> concatenaParametros(Map<K, V> parametros1, Map<K, V> parametros2) {
-        // Junta os parâmetros passados com os parâmetros padrões
-        Map<K, V> parametros = new HashMap<>(parametros1);
-        parametros.putAll(parametros2);
-        return parametros;
-    }
-
     private JsonElement fazerRequisicao(Map<String, String> parametros) throws Exception {
-        try {
-            // Concatena os parâmetros passados com os padrões
-            Map<String, String> param = concatenaParametros(parametrosPadroes, parametros);
 
-            // Começa a montar a string de consulta
-            String requisicao = URLUtils.constroiURLRequisicao(endpoint, param);
-            if (debug)
-                System.out.println("=> Wiki: URL da requisição: " + requisicao);
+        // Começa a montar a string de consulta
+        String requisicao = URLUtils.constroiURLRequisicao(endpoint, parametros);
+        if (debug) System.out.println("=> Wiki: URL da requisição: " + requisicao);
 
-            // Faz a requisição na API
-            HttpResponse<JsonNode> response = Unirest.get(requisicao).asJson();
+        // Faz a requisição na API
+        HttpResponse<JsonNode> response = Unirest.get(requisicao).asJson();
+        if (debug) System.out.println("=> Wiki: JSON de resposta\n" + JSONUtils.stringAmigavel(response.getBody().toString()));
 
-            // Se a requisição NÃO deu certo
-            if (response.getStatus() != 200) {
-                // TODO: criar exceção verificada específica
-                throw new Exception(
-                        "A requisição à API da Wikipedia não retornou resultado (status " + response.getStatus() + ")");
-            } else {
-                if (debug)
-                    System.out.println(
-                            "=> Wiki: JSON de resposta\n" + JSONUtils.stringAmigavel(response.getBody().toString()));
-                return JsonParser.parseString(response.getBody().toString());
-            }
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        } catch (UnirestException e) {
-            e.printStackTrace();
+        // Se a requisição NÃO deu certo
+        if (response.getStatus() != 200) {
+            // TODO: criar exceção verificada específica
+            throw new Exception(
+                    "A requisição à API da Wikipedia não retornou resultado (status " + response.getStatus() + ")");
+
+        } else { // se a requisição deu certo
+            
+            // Cria um elemento JSON a partir da String JSON restornada
+            return JsonParser.parseString(response.getBody().toString());
+
         }
-        return null;
     }
 
-    private PaginaWiki consultarWiki(Map<String, String> parametros) throws Exception {
-        JsonObject obj = fazerRequisicao(parametros).getAsJsonObject();
+    private PaginaWiki processarRespostaConsulta(JsonObject jsonConsulta) throws Exception {
+        if (debug) System.out.println("=> Wiki: Processando retorno da requisição");
 
-        if (debug)
-            System.out.println("=> Wiki: Processando retorno da requisição");
-
-        if (obj.get("batchcomplete").getAsBoolean()) {
-            JsonObject pagina = obj.get("query").getAsJsonObject().get("pages").getAsJsonArray().get(0)
+        if (jsonConsulta.get("batchcomplete").getAsBoolean()) {
+            JsonObject pagina = jsonConsulta.get("query").getAsJsonObject().get("pages").getAsJsonArray().get(0)
                     .getAsJsonObject();
 
             if (pagina.get("invalid") != null) {
-                if (debug)
-                    System.out.println(
-                            "=> Wiki: página não encontrada, motivo: " + pagina.get("invalidreason").getAsString());
+                if (debug) System.out.println("=> Wiki: página não encontrada, motivo: " + pagina.get("invalidreason").getAsString());
             } else if (pagina.get("missing") != null) {
-                if (debug)
-                    System.out.println(
-                            "=> Wiki: página de título '" + pagina.get("title").getAsString() + "' não existe.");
+                if (debug) System.out.println("=> Wiki: página de título '" + pagina.get("title").getAsString() + "' não existe.");
             } else {
                 BufferedImage imagem = null;
                 if (pagina.get("thumbnail") != null) {
@@ -265,18 +241,16 @@ public class Wiki implements Closeable {
                     resumo = pagina.get("extract").getAsString();
                 }
                 return new PaginaWiki(pagina.get("title").getAsString(),
-                        pagina.get("pageid").getAsInt(),
-                        resumo, imagem);
+                                      pagina.get("pageid").getAsInt(),
+                                      resumo, imagem);
             }
             return null;
         } else {
-            throw new UnsupportedOperationException("Wiki: Ainda não há trtamento para consultas em lote");
+            throw new UnsupportedOperationException("Wiki: Ainda não há tratamento para consultas em lote");
         }
     }
 
-    private List<String> pesquisarNaWiki(Map<String, String> parametros) throws Exception {
-        JsonArray jsonArray = fazerRequisicao(parametros).getAsJsonArray();
-
+    private List<String> processarRespostaPesquisa(JsonArray jsonArray) throws Exception {
         if (debug)
             System.out.println("=> Wiki: Processando retorno da requisição");
 

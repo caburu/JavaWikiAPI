@@ -119,7 +119,7 @@ public class App {
     private void consultarPagina(String titulo) throws Exception {
         if (titulo != null) {
             System.out.println("Consultando " + wiki.getEndpoint() + " (aguarde)...");
-            PaginaWiki pagina = wiki.buscarPagina(titulo);
+            PaginaWiki pagina = wiki.consultarPagina(titulo);
 
             if (pagina == null) {
                 System.out.println("\nPágina " + titulo + " não encontrada!");
