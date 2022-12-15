@@ -1,8 +1,8 @@
 package br.ufla.gac106.JavaWikiAPI;
 
+import java.awt.image.BufferedImage;
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,8 +11,6 @@ import java.util.Map;
 
 import javax.imageio.ImageIO;
 
-import java.awt.image.BufferedImage;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -20,7 +18,6 @@ import com.google.gson.JsonParser;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
 
 /**
  * Classe para obter dados de uma plataforma Wiki.
@@ -70,22 +67,22 @@ public class Wiki implements Closeable {
      */
     private void definirParametrosPadroes() {
         parametrosConsulta = Map.of(
-                "action", "query", // vamos fazer uma consulta
+                "action", "query",             // vamos fazer uma consulta
                 "prop", "extracts|pageimages", // buscando pelo resumo e pela imagem (thumbnail) da página
-                "exintro", "true", // queremos o resumo que vem antes da primeira seção
-                "explaintext", "true", // queremos o texto puro em vez de HTML limitado
-                "exsectionformat", "plain", // e com o texto sem nenhuma formatação
-                "pithumbsize", "300", // a imagem deve ter largura máxima da imagem em pixels
-                "redirects", "resolve", // os redirecionamentos de página devem ser tratados
-                "format", "json", // a resposta deve vir no formato JSON
-                "formatversion", "2" // na versão 2
+                "exintro", "true",             // queremos o resumo que vem antes da primeira seção
+                "explaintext", "true",         // queremos o texto puro em vez de HTML limitado
+                "exsectionformat", "plain",    // e com o texto sem nenhuma formatação
+                "pithumbsize", "300",          // a imagem deve ter largura máxima da imagem em pixels
+                "redirects", "resolve",        // os redirecionamentos de página devem ser tratados
+                "format", "json",              // a resposta deve vir no formato JSON
+                "formatversion", "2"           // na versão 2
         );
 
         parametrosPesquisa = Map.of(
                 "action", "opensearch", // vamos fazer uma pesquisa
                 "redirects", "resolve", // os redirecionamentos de página devem ser tratados
-                "format", "json", // a resposta deve vir no formato JSON
-                "formatversion", "2" // na versão 2
+                "format", "json",       // a resposta deve vir no formato JSON
+                "formatversion", "2"    // na versão 2
         );
     }
 
@@ -219,37 +216,61 @@ public class Wiki implements Closeable {
         }
     }
 
+    /**
+     * Processa a resposta a uma requisição de consulta
+     * 
+     * @para jsonConsulta Objeto JSON retornado pela API
+     */
     private PaginaWiki processarRespostaConsulta(JsonObject jsonConsulta) throws Exception {
         if (debug) System.out.println("=> Wiki: Processando retorno da requisição");
 
+        // se a resposta veio completa
         if (jsonConsulta.get("batchcomplete").getAsBoolean()) {
-            JsonObject pagina = jsonConsulta.get("query").getAsJsonObject().get("pages").getAsJsonArray().get(0)
-                    .getAsJsonObject();
 
+            // Obtém o elemento com informações da página
+            JsonObject pagina = jsonConsulta.get("query").getAsJsonObject()
+                                            .get("pages").getAsJsonArray()
+                                            .get(0).getAsJsonObject();
+
+            // Se o retorno é inválido
             if (pagina.get("invalid") != null) {
                 if (debug) System.out.println("=> Wiki: página não encontrada, motivo: " + pagina.get("invalidreason").getAsString());
+            // Se a página ainda não existe
             } else if (pagina.get("missing") != null) {
                 if (debug) System.out.println("=> Wiki: página de título '" + pagina.get("title").getAsString() + "' não existe.");
+            // Se a página foi encontrada
             } else {
+                // Obtém o resumo da página (se ele foi retornado)
+                String resumo = "";
+                if (pagina.get("extract") != null) {
+                    resumo = pagina.get("extract").getAsString();
+                }
+                
+                // Obtém o imagem (thumbnail) da página (se ela foi retornada)
                 BufferedImage imagem = null;
                 if (pagina.get("thumbnail") != null) {
                     String endereçoDaImagem = pagina.get("thumbnail").getAsJsonObject().get("source").getAsString();
                     imagem = ImageIO.read(new URL(endereçoDaImagem));
                 }
-                String resumo = "";
-                if (pagina.get("extract") != null) {
-                    resumo = pagina.get("extract").getAsString();
-                }
+
+                // Cria e retorna um objeto que representa a página Wiki obtida
                 return new PaginaWiki(pagina.get("title").getAsString(),
                                       pagina.get("pageid").getAsInt(),
                                       resumo, imagem);
             }
+            // Se a página não foi obtida com sucesso, retorna null
             return null;
         } else {
+            // Caso o retorno não seja completo, lança exceção indicando a situação
             throw new UnsupportedOperationException("Wiki: Ainda não há tratamento para consultas em lote");
         }
     }
 
+    /**
+     * Processa a resposta a uma requisição de pesquisa
+     * 
+     * @para jsonArray Objeto JSON Array retornado pela API
+     */
     private List<String> processarRespostaPesquisa(JsonArray jsonArray) throws Exception {
         if (debug)
             System.out.println("=> Wiki: Processando retorno da requisição");
