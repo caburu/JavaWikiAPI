@@ -3,9 +3,13 @@ package br.ufla.gac106.JavaWikiAPI;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mashape.unirest.http.HttpResponse;
@@ -55,13 +59,10 @@ public class Wiki implements Closeable {
      * Define parâmetros padrões a serem utilizados em todas as consultas
      */
     private void definirParametrosPadroes() {
-        parametrosPadroes = new HashMap<>();
-        
-        // Usaremos o módulo de consulta
-        parametrosPadroes.put("action","query");
+        parametrosPadroes = new HashMap<>();        
 
         // Aplica os redirecionamentos necessários até chegar na página correta
-        parametrosPadroes.put("redirects","true");
+        parametrosPadroes.put("redirects","resolve");
         
         // Vamos obter resultados no formato JSON v2 (sem isso é retornado resultado HTML)
         parametrosPadroes.put("format","json");
@@ -104,8 +105,8 @@ public class Wiki implements Closeable {
      * 
      * @returns Objeto da página Wiki buscada (ou null se ela não for encontrada)
      */
-    public PaginaWiki buscarResumoDePagina(String titulo) throws Exception {
-        if (debug) System.out.println("=> Wiki: Montando parâmetros da busca por resumo de página");
+    public PaginaWiki buscarPagina(String titulo) throws Exception {
+        if (debug) System.out.println("=> Wiki: Montando parâmetros da busca por uma página pelo título");
 
         Map<String, String> parametros = new HashMap<>();
         
@@ -121,17 +122,35 @@ public class Wiki implements Closeable {
         // Vamos buscar o texto sem nenhuma formatação
         parametros.put("exsectionformat", "plain");
 
+        // Vamos fazer uma consulta
+        parametros.put("action", "query");
+
         // Vamos buscar a página cujo título foi passado
         parametros.put("titles", titulo);
 
-        if (titulo.equals("São Paulo")) {
-            System.out.println("É igual");
-        }
-        else {
-            System.out.println("É diferente " + titulo + " x " + "São Paulo");
-        }
-
         return consultarWiki(parametros);
+    }
+
+    
+    /**
+     * Faz uma busca pelo termo passado e retorna títulos de páginas relacionados ao termo de busca
+     * 
+     * @param termoDeBusca String utilizada para a busca
+     * 
+     * @return Uma lista de páginas retornada pela busca
+     */
+    public List<String> pesquisarTitulosDePaginas(String termoDeBusca) throws Exception {
+        if (debug) System.out.println("=> Wiki: Montando parâmetros da pesquisa por títulos de páginas");
+
+        Map<String, String> parametros = new HashMap<>();
+
+        // Vamos fazer uma pesquisa
+        parametros.put("action", "opensearch");
+        
+        // Parâmetro para passar o termo de busca
+        parametros.put("search", termoDeBusca);
+        
+        return pesquisarNaWiki(parametros);
     }
 
     /*
@@ -144,10 +163,13 @@ public class Wiki implements Closeable {
         return parametros;
     }
 
-    private PaginaWiki consultarWiki(Map<String, String> parametros) throws Exception {
+    private JsonElement fazerRequisicao(Map<String, String> parametros) throws Exception {
         try {
+            // Concatena os parâmetros passados com os padrões
+            Map<String, String> param = concatenaParametros(parametrosPadroes, parametros);
+
             // Começa a montar a string de consulta            
-            String requisicao =  URLUtils.constroiURLRequisicao(endpoint, concatenaParametros(parametrosPadroes, parametros));
+            String requisicao =  URLUtils.constroiURLRequisicao(endpoint, param);
             if (debug) System.out.println("=> Wiki: URL da requisição: " + requisicao);
                
             // Faz a requisição na API
@@ -160,7 +182,7 @@ public class Wiki implements Closeable {
             }
             else {
                 if (debug) System.out.println("=> Wiki: JSON de resposta\n" + JSONUtils.stringAmigavel(response.getBody().toString()));
-                return processarConsulta(response.getBody().toString());
+                return JsonParser.parseString(response.getBody().toString());
             }
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
@@ -170,16 +192,10 @@ public class Wiki implements Closeable {
         return null;
     }
 
-    /**
-     * Processa uma consulta a uma página Wiki
-     * 
-     * @param jsonString String JSON retornada pela consulta
-     * 
-     * @return Objeto PaginaWiki com os dados da página encontrada
-     */
-    private PaginaWiki processarConsulta(String jsonString) {
-        
-        JsonObject obj = JsonParser.parseString(jsonString).getAsJsonObject();
+    private PaginaWiki consultarWiki(Map<String, String> parametros) throws Exception {
+        JsonObject obj = fazerRequisicao(parametros).getAsJsonObject();
+
+        if (debug) System.out.println("=> Wiki: Processando retorno da requisição");
         
         if (obj.get("batchcomplete").getAsBoolean()) {
             JsonObject pagina = obj.get("query").getAsJsonObject().get("pages").getAsJsonArray().get(0).getAsJsonObject();
@@ -192,15 +208,27 @@ public class Wiki implements Closeable {
             }
             else {
                 return new PaginaWiki(pagina.get("title").getAsString(), 
-                                    pagina.get("pageid").getAsInt(),
-                                    pagina.get("extract").getAsString());
+                                      pagina.get("pageid").getAsInt(),
+                                      pagina.get("extract").getAsString());
             }
             return null;
         }
         else {
-            throw new UnsupportedOperationException("Wiki: Ainda não há trtamento para consultas em mlote");
+            throw new UnsupportedOperationException("Wiki: Ainda não há trtamento para consultas em lote");
         }
-        
     }
 
+    private List<String> pesquisarNaWiki(Map<String, String> parametros) throws Exception {
+        JsonArray jsonArray = fazerRequisicao(parametros).getAsJsonArray();
+
+        if (debug) System.out.println("=> Wiki: Processando retorno da requisição");
+        
+        List<String> titulos = new ArrayList<>();
+
+        for (JsonElement element : jsonArray.get(1).getAsJsonArray()) {
+            titulos.add(element.getAsString());
+        }
+
+        return titulos;
+    }
 }

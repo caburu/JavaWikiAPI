@@ -11,62 +11,46 @@ public class App {
         // Cria objeto para consultar dados da Wikipedia
         Wiki wiki = new Wiki();
         // Liga o modo de debug (verboso)
-        wiki.setDebug(true);
+        // wiki.setDebug(true);
+        
+        String termo;
+        int opcao = 0;
 
-        String titulo;
-        do {
-            System.out.print("\nDigite o título da página a ser buscada.\n\t- ENTER para sair.\n\t- No Windows, escreva @ para palavras acentuadas\n> ");
-            titulo = entrada.nextLine();
+        while (opcao != 3) {
+            System.out.println("\n=== JAVA WIKI API ===");
+            System.out.println(" 1 - Consultar página por título");
+            System.out.println(" 2 - Pesquisar títulos de página");
+            System.out.println(" 3 - Sair");
+            System.out.print("\nQual opção deseja acessar? ");
+            opcao = Integer.parseInt(entrada.nextLine());
+
+            if (opcao == 3) {
+                // se vai sair, não faz nada
+            }
+            else {
+                System.out.print("\nDigite o termo de busca\n\t- No Windows, escreva @ para palavras acentuadas\n> ");
+                termo = entrada.nextLine();
             
-            if (titulo.equals("@")) {
-                System.out.println("Warning: No terminal no Windows está dando problema com String acentuadas.");
-                // Se uso a palavra "São Paulo" diretamente no código, URLEncoder transforma em "S%C3%A3o+Paulo" e funciona.
-                // Mas se o usuário digita isso no terminal, URLEncoder transforma em "S%EF%BF%BDo+Paulo" e dá errado.
-                titulo = JOptionPane.showInputDialog(null, "Digite o título da página a ser buscada (vazio para sair): ");
-            }
+                if (termo.equals("@")) {
+                    System.out.println("Warning: No terminal no Windows está dando problema com String acentuadas.");
+                    // Se uso a palavra "São Paulo" diretamente no código, URLEncoder transforma em "S%C3%A3o+Paulo" e funciona.
+                    // Mas se o usuário digita isso no terminal, URLEncoder transforma em "S%EF%BF%BDo+Paulo" e dá errado.
+                    termo = JOptionPane.showInputDialog(null, "Digite o título da página a ser buscada (vazio para sair): ");
+                }
                         
-            if (titulo != null && titulo.length() > 0) {
+                if (termo != null && termo.length() > 0) {
 
-                System.out.println("\n=== Primeiro trecho da página: ===");
-                System.out.println(wiki.buscarResumoDePagina(titulo));
-
-                // System.out.println("\n=== Lista de imagens da página: ===");
-                // ArrayList<String> infoImagens = wiki.getImagesOnPage(termo);
-                // for (String infoImagem : infoImagens) {
-                //     System.out.println("> " + infoImagem);
-                // }
-
-                // var infoImg = infoImagens.get(0);
-                // String[] params = {"titles", infoImg, "prop", "imageinfo", "iiprop", "url"};
-                // okhttp3.Response httpResponse = wiki.basicGET("query", params);                        
-                // if (httpResponse.code() == 200) {
-                //     // Gson gson = new GsonBuilder().setPrettyPrinting().create();;
-                //     // String jsonString = httpResponse.body().string();
-                //     // impressaoAmigavelJSON(jsonString);
-
-                //     // Obtendo os dados do JSON como um Map
-                //     System.out.println("\nObtendo URL da primeira imagem:");
-                //     try {
-                //         String jsonString = httpResponse.body().string();
-                //         JsonObject obj = JsonParser.parseString(jsonString).getAsJsonObject();
-                //         String url = obj.get("query").getAsJsonObject()
-                //                         .get("pages").getAsJsonObject()
-                //                         .get("-1").getAsJsonObject()
-                //                         .get("imageinfo").getAsJsonArray()
-                //                         .get(0).getAsJsonObject()
-                //                         .get("url").getAsString();
-                //         System.out.println(url);
-                        
-                //         BufferedImage image = ImageIO.read(new URL(url));
-                //         JLabel lbl = new JLabel(new ImageIcon(image));
-                //         JOptionPane.showMessageDialog(null, lbl, "ImageDialog",  JOptionPane.PLAIN_MESSAGE, null);
-                //     } catch (JsonSyntaxException | IOException e) {
-                //         e.printStackTrace();
-                //     }
-                    
-                // }
+                    if (opcao == 1) {
+                        System.out.println("\n=== Primeiro trecho da página: ===");
+                        System.out.println(wiki.buscarPagina(termo));
+                    }
+                    else if (opcao == 2) {
+                        System.out.println("\n=== Primeiro trecho da página: ===");
+                        System.out.println(wiki.pesquisarTitulosDePaginas(termo));
+                    }
+                }
             }
-        } while (titulo != null && titulo.length() > 0);
+        }
 
         wiki.close();
 
