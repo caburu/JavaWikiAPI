@@ -30,6 +30,7 @@ public class AppMinimo {
             System.out.println(tituloDePagina + "\n" + pagina.getResumo() + "\n");
         }
 
+        // libera os recursos do objeto usado para fazer a consulta à API
         wiki.close();
     }
 }

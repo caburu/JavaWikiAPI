@@ -28,8 +28,6 @@ import com.mashape.unirest.http.exceptions.UnirestException;
  * Pode ser a Wikipedia em qualquer idioma, ou qualquer outro site que utilize a plataforma Wiki
  */
 public class Wiki implements Closeable {
-    // domínio da Wiki a ser consultada
-    private String dominio;
     // endereço completo da API a ser utilizada
     private String endpoint;
     // parâmetros padrões a serem utilizados em todas as consultas
@@ -39,22 +37,22 @@ public class Wiki implements Closeable {
 
     /**
      * Constrói o objeto capaz de obter dados da Wikipedia em Português (domínio "pt.wikipedia.org").
-     * Lembre-se de usar o método terminar quando não for mais usar o objeto
+     * Lembre-se de usar o método terminar quando não for mais usar o objeto.
      * 
-     * Para obter dados de outras Wikis, utilize outro construtor.
+     * Para obter dados de outras Wikis, utilize outro construtor (ou o método setEndpoint).
      */
     public Wiki() {
-        this("pt.wikipedia.org");
+        this("https://pt.wikipedia.org/w/api.php");
     }
 
     /**
      * Constrói o objeto capaz de obter dados de uma Wiki
+     * Lembre-se de usar o método terminar quando não for mais usar o objeto.
      * 
-     * @param dominio Domínio da Wikie a ser consultada (ex: "en.wikipedia.org"). Se não informado, usa "pt.wikipedia.org"
+     * @param endpoint Endpoint da Wiki a ser consultada (ex: "https://en.wikipedia.org/w/api.php").
      */
-    public Wiki(String dominio) {
-        this.dominio = dominio;
-        endpoint = "https://" + dominio + "/w/api.php";
+    public Wiki(String endpoint) {
+        this.endpoint = endpoint;
         debug = false;
 
         definirParametrosPadroes();
@@ -79,8 +77,15 @@ public class Wiki implements Closeable {
      * 
      * @return Domínio da Wiki
      */
-    public String getDominio() {
-        return dominio;
+    public String getEndpoint() {
+        return endpoint;
+    }
+
+    /**
+     * Muda o domínio Wiki utilizado nas consultas (ex: "https://en.wikipedia.org/w/api.php")
+     */
+    public void setEndpoint(String endpoint) {
+        this.endpoint = endpoint;
     }
 
     /**
@@ -113,7 +118,10 @@ public class Wiki implements Closeable {
     }
 
     /*
-     * Retorna o resumo (texto antes da primeira seção) de uma página
+     * Retorna um objeto que representa a página Wiki cujo título foi passado (ou null se a página não for encontrada).
+     * Observações:
+     * - O resumo é dado pelo texto que vem antes da primeira seção da página (nem toda página da Wiki tem).
+     * - A imagem é o 'thumbnail' da página (nem toda página da Wiki tem).
      * 
      * @param titulo Título da página a ser buscada
      * 
@@ -150,7 +158,8 @@ public class Wiki implements Closeable {
 
     
     /**
-     * Faz uma busca pelo termo passado e retorna títulos de páginas relacionados ao termo de busca
+     * Faz uma busca pelo termo passado e retorna títulos de páginas relacionados ao termo de busca (no máximo 10 títulos).
+     * É útil quando se pretende buscar uma página mas não se tem certeza do título dela na Wiki
      * 
      * @param termoDeBusca String utilizada para a busca
      * 
@@ -229,10 +238,13 @@ public class Wiki implements Closeable {
                     String endereçoDaImagem = pagina.get("thumbnail").getAsJsonObject().get("source").getAsString();
                     imagem = ImageIO.read(new URL(endereçoDaImagem));
                 }
+                String resumo = "";
+                if (pagina.get("extract") != null) {
+                    resumo = pagina.get("extract").getAsString();
+                }
                 return new PaginaWiki(pagina.get("title").getAsString(), 
                                       pagina.get("pageid").getAsInt(),
-                                      pagina.get("extract").getAsString(),
-                                      imagem);
+                                      resumo, imagem);
             }
             return null;
         }
