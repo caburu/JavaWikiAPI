@@ -3,6 +3,9 @@ package br.ufla.gac106.JavaWikiAPI;
 import java.awt.image.BufferedImage;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,6 +21,7 @@ import com.google.gson.JsonParser;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.exceptions.UnirestException;
 
 /**
  * Classe para obter dados de uma plataforma Wiki.
@@ -145,19 +149,30 @@ public class Wiki implements Closeable {
      * 
      * @returns Objeto da página Wiki buscada (ou null se ela não for encontrada)
      */
-    public PaginaWiki consultarPagina(String titulo) throws Exception {
-        if (debug) System.out.println("=> Wiki: Montando parâmetros da busca por uma página pelo título");
+    public PaginaWiki consultarPagina(String titulo) throws JavaWikiInternalException, UnsuccessfulHTTPRequestException {
+        try {
+            if (debug) System.out.println("=> Wiki: Montando parâmetros da busca por uma página pelo título");
 
-        Map<String, String> parametros = new HashMap<>(parametrosConsulta);
+            Map<String, String> parametros = new HashMap<>(parametrosConsulta);
 
-        // Vamos buscar a página cujo título foi passado
-        parametros.put("titles", titulo);
+            // Vamos buscar a página cujo título foi passado
+            parametros.put("titles", titulo);
 
-        // Faz a requisição de consulta na API
-        JsonObject jsonResposta = fazerRequisicao(parametros).getAsJsonObject();
+            // Faz a requisição de consulta na API
+            JsonObject jsonResposta = fazerRequisicao(parametros).getAsJsonObject();
 
-        // Processa a resposta e retorna a página
-        return processarRespostaConsulta(jsonResposta);
+            // Processa a resposta e retorna a página
+            return processarRespostaConsulta(jsonResposta);
+        }
+        catch (UnsuccessfulHTTPRequestException e) {
+            // se ocorrer uma exceção de requisição HTTP mal-sucedida, ela é simplesmente relançada
+            throw e;
+        }
+        catch (Exception e) {
+            // Caso ocorra qualquer outra exceção, lança uma exceção de erro interno na JavaWikiAPI,
+            // passando a exceção original como a causa
+            throw new JavaWikiInternalException(titulo, endpoint, e);
+        }
     }
 
     /**
@@ -169,20 +184,32 @@ public class Wiki implements Closeable {
      * @param termoDeBusca String utilizada para a busca
      * 
      * @return Uma lista de páginas retornada pela busca
+     * @throws UnsuccessfulHTTPRequestException
      */
-    public List<String> pesquisarTitulosDePaginas(String termoDeBusca) throws Exception {
-        if (debug) System.out.println("=> Wiki: Montando parâmetros da pesquisa por títulos de páginas");
+    public List<String> pesquisarTitulosDePaginas(String termoDeBusca) throws JavaWikiInternalException, UnsuccessfulHTTPRequestException {
+        try {            
+            if (debug) System.out.println("=> Wiki: Montando parâmetros da pesquisa por títulos de páginas");
 
-        Map<String, String> parametros = new HashMap<>(parametrosPesquisa);
+            Map<String, String> parametros = new HashMap<>(parametrosPesquisa);
 
-        // Parâmetro para passar o termo de busca
-        parametros.put("search", termoDeBusca);
+            // Parâmetro para passar o termo de busca
+            parametros.put("search", termoDeBusca);
 
-        // Faz a requisição de pesquisa na API
-        JsonArray jsonResposta = fazerRequisicao(parametros).getAsJsonArray();
+            // Faz a requisição de pesquisa na API
+            JsonArray jsonResposta = fazerRequisicao(parametros).getAsJsonArray();
 
-        // Processa a resposta da pesquisa e retorna a lista de títulos de página
-        return processarRespostaPesquisa(jsonResposta);
+            // Processa a resposta da pesquisa e retorna a lista de títulos de página
+            return processarRespostaPesquisa(jsonResposta);
+        }
+        catch (UnsuccessfulHTTPRequestException e) {
+            // se ocorrer uma exceção de requisição HTTP mal-sucedida, ela é simplesmente relançada
+            throw e;
+        }
+        catch (Exception e) {
+            // Caso ocorra qualquer outra exceção, lança uma exceção de erro interno na JavaWikiAPI,
+            // passando a exceção original como a causa
+            throw new JavaWikiInternalException(termoDeBusca, endpoint, e);
+        }
     }
 
     /**
@@ -190,10 +217,14 @@ public class Wiki implements Closeable {
      * 
      * @param parametros Parâmetros da chamada da API
      * @return Elemento JSON retornado como resposta
+     * @throws UnsuccessfulHTTPRequestException
+     * @throws URISyntaxException
+     * @throws MalformedURLException
+     * @throws UnsupportedEncodingException
+     * @throws UnirestException
      * @throws Exception
      */
-    private JsonElement fazerRequisicao(Map<String, String> parametros) throws Exception {
-
+    private JsonElement fazerRequisicao(Map<String, String> parametros) throws UnsuccessfulHTTPRequestException, UnsupportedEncodingException, MalformedURLException, URISyntaxException, UnirestException {
         // Começa a montar a string de consulta
         String requisicao = URLUtils.constroiURLRequisicao(endpoint, parametros);
         if (debug) System.out.println("=> Wiki: URL da requisição: " + requisicao);
@@ -202,61 +233,68 @@ public class Wiki implements Closeable {
         HttpResponse<JsonNode> response = Unirest.get(requisicao).asJson();
         if (debug) System.out.println("=> Wiki: JSON de resposta\n" + JSONUtils.stringAmigavel(response.getBody().toString()));
 
-        // Se a requisição NÃO deu certo
+        // Se a requisição NÃO foi bem-sucedida
         if (response.getStatus() != 200) {
-            // TODO: criar exceção verificada específica
-            throw new Exception(
-                    "A requisição à API da Wikipedia não retornou resultado (status " + response.getStatus() + ")");
-
-        } else { // se a requisição deu certo
-            
+            // Lança uma exceção específica para essa situação           
+            throw new UnsuccessfulHTTPRequestException(response.getStatus(), response.getStatusText());
+        } 
+        // se a requisição deu certo
+        else {
             // Cria um elemento JSON a partir da String JSON restornada
             return JsonParser.parseString(response.getBody().toString());
-
         }
     }
 
     /**
      * Processa a resposta a uma requisição de consulta
+     * @throws IOException
+     * @throws MalformedURLException
      * 
      * @para jsonConsulta Objeto JSON retornado pela API
      */
-    private PaginaWiki processarRespostaConsulta(JsonObject jsonConsulta) throws Exception {
+    private PaginaWiki processarRespostaConsulta(JsonObject jsonConsulta) throws MalformedURLException, IOException {
         if (debug) System.out.println("=> Wiki: Processando retorno da requisição");
 
         // se a resposta veio completa
         if (jsonConsulta.get("batchcomplete").getAsBoolean()) {
 
-            // Obtém o elemento com informações da página
-            JsonObject pagina = jsonConsulta.get("query").getAsJsonObject()
-                                            .get("pages").getAsJsonArray()
-                                            .get(0).getAsJsonObject();
+            // Obtém o elemento com informações da consulta
+            JsonObject query = jsonConsulta.get("query").getAsJsonObject();
 
-            // Se o retorno é inválido
-            if (pagina.get("invalid") != null) {
-                if (debug) System.out.println("=> Wiki: página não encontrada, motivo: " + pagina.get("invalidreason").getAsString());
-            // Se a página ainda não existe
-            } else if (pagina.get("missing") != null) {
-                if (debug) System.out.println("=> Wiki: página de título '" + pagina.get("title").getAsString() + "' não existe.");
-            // Se a página foi encontrada
-            } else {
-                // Obtém o resumo da página (se ele foi retornado)
-                String resumo = "";
-                if (pagina.get("extract") != null) {
-                    resumo = pagina.get("extract").getAsString();
-                }
-                
-                // Obtém o imagem (thumbnail) da página (se ela foi retornada)
-                BufferedImage imagem = null;
-                if (pagina.get("thumbnail") != null) {
-                    String endereçoDaImagem = pagina.get("thumbnail").getAsJsonObject().get("source").getAsString();
-                    imagem = ImageIO.read(new URL(endereçoDaImagem));
-                }
+            // Se encontrou informações da página
+            if (query.get("pages") != null) {
 
-                // Cria e retorna um objeto que representa a página Wiki obtida
-                return new PaginaWiki(pagina.get("title").getAsString(),
-                                      pagina.get("pageid").getAsInt(),
-                                      resumo, imagem);
+                // Obtém o elemento com informações da página
+                JsonObject pagina =  query.get("pages").getAsJsonArray().get(0).getAsJsonObject();
+
+                // Se o retorno é inválido
+                if (pagina.get("invalid") != null) {
+                    if (debug) System.out.println("=> Wiki: página não encontrada, motivo: " + pagina.get("invalidreason").getAsString());            
+                } 
+                // Se a página ainda não existe
+                else if (pagina.get("missing") != null) {
+                    if (debug) System.out.println("=> Wiki: página de título '" + pagina.get("title").getAsString() + "' não existe.");
+                } 
+                // Se a página foi encontrada
+                else {
+                    // Obtém o resumo da página (se ele foi retornado)
+                    String resumo = "";
+                    if (pagina.get("extract") != null) {
+                        resumo = pagina.get("extract").getAsString();
+                    }
+                    
+                    // Obtém o imagem (thumbnail) da página (se ela foi retornada)
+                    BufferedImage imagem = null;
+                    if (pagina.get("thumbnail") != null) {
+                        String endereçoDaImagem = pagina.get("thumbnail").getAsJsonObject().get("source").getAsString();
+                        imagem = ImageIO.read(new URL(endereçoDaImagem));
+                    }
+
+                    // Cria e retorna um objeto que representa a página Wiki obtida
+                    return new PaginaWiki(pagina.get("title").getAsString(),
+                                        pagina.get("pageid").getAsInt(),
+                                        resumo, imagem);
+                }
             }
             // Se a página não foi obtida com sucesso, retorna null
             return null;
@@ -271,7 +309,7 @@ public class Wiki implements Closeable {
      * 
      * @para jsonArray Objeto JSON Array retornado pela API
      */
-    private List<String> processarRespostaPesquisa(JsonArray jsonArray) throws Exception {
+    private List<String> processarRespostaPesquisa(JsonArray jsonArray) {
         if (debug)
             System.out.println("=> Wiki: Processando retorno da requisição");
 
