@@ -101,7 +101,7 @@ A classe [App](./src/App.java) implementa uma alternativa para contornar a quest
 
 - Obs.: no VS Code, na primeira vez que a janela é exibida, ela pode aparecer atrás do VS Code.
 
-Uma [issue](#1) foi aberta sobre essa questão.
+Uma [issue](https://github.com/caburu/JavaWikiAPI/issues/1) foi aberta sobre essa questão.
 Sugestões para resolver isso são muito bem-vindas.
 
 ## Detalhes técnicos da requisição e dados retornados
