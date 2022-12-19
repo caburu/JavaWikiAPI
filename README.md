@@ -89,6 +89,21 @@ Este projeto possui duas classes que demonstram mais detalhes sobre a utilizaç�
 - A classe [AppMinimo](./src/AppMinimo.java) traz um programa simples que utiliza os métodos principais da classe `Wiki`.
 - Já a classe [App](./src/App.java) traz um exemplo mais completo que exibe imagens das páginas, permite ligar o modo de depuração e acessar outras wikis.
 
+## Problemas com caracteres com acentos no Windows
+
+Usando Windows, se alguém tentar procurar por uma página utilizando alguma palavra com acento (ex: "São Paulo"), a consulta não trará resultados.
+Ao avaliar o problema, vemos que a consulta é feita com a string `SÆo Paulo`, em vez de `São Paulo` (obs.: o problema não ocorre no Linux).
+
+Pesquisando sobre a questão, o problema parece ser a forma como o terminal no Windows (utilizado pelo VS Code) trata a codificação de caracteres.
+Esse, portanto, **não parece ser um problema da implementação da JavaWikiAPI**, mas sim um problema mais complexo que depende do terminal usado no Windows.
+
+A classe [App](./src/App.java) implementa uma alternativa para contornar a questão: utiliza uma janela gráfica para obter o termo de busca do usuário.
+
+- Obs.: no VS Code, na primeira vez que a janela é exibida, ela pode aparecer atrás do VS Code.
+
+Uma [issue](#1) foi aberta sobre essa questão.
+Sugestões para resolver isso são muito bem-vindas.
+
 ## Detalhes técnicos da requisição e dados retornados
 
 Para saber quais são os parâmetros utilizados para montar a URL de requisição à API da Wiki, verifique a implementação do método `definirParametrosPadroes` da class `Wiki`.
