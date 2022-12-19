@@ -10,7 +10,7 @@ import com.google.gson.JsonParser;
  */
 public class JSONUtils {
     /**
-     * Retorna uma representação amigável (indentada) da string JSON passada
+     * Retorna uma representação amigável (indentada e mais legível) da string JSON passada
      * 
      * @param jsonString String JSON
      * 

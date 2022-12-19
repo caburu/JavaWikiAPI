@@ -225,23 +225,25 @@ public class Wiki implements Closeable {
      * @throws Exception
      */
     private JsonElement fazerRequisicao(Map<String, String> parametros) throws UnsuccessfulHTTPRequestException, UnsupportedEncodingException, MalformedURLException, URISyntaxException, UnirestException {
-        // Começa a montar a string de consulta
-        String requisicao = URLUtils.constroiURLRequisicao(endpoint, parametros);
-        if (debug) System.out.println("=> Wiki: URL da requisição: " + requisicao);
-
+        // se está em modo de debug, monta a requisição sem executá-la para obter a URL de consulta
+        if (debug) {
+            System.out.println("=> Wiki: URL da requisição: " + Unirest.get(endpoint).queryString(new HashMap<String, Object>(parametros)).getUrl());
+        }
         // Faz a requisição na API
-        HttpResponse<JsonNode> response = Unirest.get(requisicao).asJson();
-        if (debug) System.out.println("=> Wiki: JSON de resposta\n" + JSONUtils.stringAmigavel(response.getBody().toString()));
+        HttpResponse<JsonNode> response = Unirest.get(endpoint).queryString(new HashMap<String, Object>(parametros)).asJson();        
 
-        // Se a requisição NÃO foi bem-sucedida
-        if (response.getStatus() != 200) {
-            // Lança uma exceção específica para essa situação           
-            throw new UnsuccessfulHTTPRequestException(response.getStatus(), response.getStatusText());
-        } 
-        // se a requisição deu certo
-        else {
+        // Se a requisição foi bem-sucedida
+        if (response.getStatus() >= 200 && response.getStatus() < 300) {
+            // se está em modo de debug, exibe a resposta da requisição em formato amigável
+            if (debug)  System.out.println("=> Wiki: Resposta da requisição: " + JSONUtils.stringAmigavel(response.getBody().toString()));
+
             // Cria um elemento JSON a partir da String JSON restornada
             return JsonParser.parseString(response.getBody().toString());
+        } 
+        // se a requisição NÃO deu certo
+        else {
+            // Lança uma exceção específica para essa situação           
+            throw new UnsuccessfulHTTPRequestException(response.getStatus(), response.getStatusText());
         }
     }
 
@@ -252,7 +254,7 @@ public class Wiki implements Closeable {
      * 
      * @para jsonConsulta Objeto JSON retornado pela API
      */
-    private PaginaWiki processarRespostaConsulta(JsonObject jsonConsulta) throws MalformedURLException, IOException {
+    private PaginaWiki processarRespostaConsulta(JsonObject jsonConsulta) throws MalformedURLException {
         if (debug) System.out.println("=> Wiki: Processando retorno da requisição");
 
         // se a resposta veio completa
@@ -287,7 +289,12 @@ public class Wiki implements Closeable {
                     BufferedImage imagem = null;
                     if (pagina.get("thumbnail") != null) {
                         String endereçoDaImagem = pagina.get("thumbnail").getAsJsonObject().get("source").getAsString();
-                        imagem = ImageIO.read(new URL(endereçoDaImagem));
+                        try {
+                            imagem = ImageIO.read(new URL(endereçoDaImagem));
+                        }
+                        catch (IOException e) {
+                            if (debug) System.err.println("=> Wiki: Erro ao tentar obter imagem da página '" + pagina.get("title").getAsString() + "'. URL: " + endereçoDaImagem);
+                        }
                     }
 
                     // Cria e retorna um objeto que representa a página Wiki obtida
