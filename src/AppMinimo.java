@@ -1,7 +1,7 @@
 import java.util.List;
 
-import br.ufla.gac106.JavaWikiAPI.PaginaWiki;
-import br.ufla.gac106.JavaWikiAPI.Wiki;
+import br.ufla.dac.javaWikiAPI.Wiki;
+import br.ufla.dac.javaWikiAPI.PaginaWiki;
 
 public class AppMinimo {
     public static void main(String[] args) throws Exception {

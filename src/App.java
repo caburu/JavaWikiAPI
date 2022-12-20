@@ -5,8 +5,8 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 
-import br.ufla.gac106.JavaWikiAPI.PaginaWiki;
-import br.ufla.gac106.JavaWikiAPI.Wiki;
+import br.ufla.dac.javaWikiAPI.Wiki;
+import br.ufla.dac.javaWikiAPI.PaginaWiki;
 
 public class App {
     // Objeto usado para consultar a API de uma Wiki.

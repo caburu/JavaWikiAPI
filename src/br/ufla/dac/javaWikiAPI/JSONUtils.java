@@ -1,4 +1,4 @@
-package br.ufla.gac106.JavaWikiAPI;
+package br.ufla.dac.javaWikiAPI;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

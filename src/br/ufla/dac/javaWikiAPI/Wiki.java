@@ -1,4 +1,4 @@
-package br.ufla.gac106.JavaWikiAPI;
+package br.ufla.dac.javaWikiAPI;
 
 import java.awt.image.BufferedImage;
 import java.io.Closeable;
